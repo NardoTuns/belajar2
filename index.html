@@ -2,17 +2,19 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Kuis Sederhana</title>
+  <title>Kuis dari Spreadsheet</title>
   <style>
-    body { font-family: Arial; padding: 20px; }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
     .soal { margin-bottom: 20px; }
+    .soal strong { display: block; margin-bottom: 5px; }
+    button { padding: 10px 20px; font-size: 16px; }
   </style>
 </head>
 <body>
   <h1>Kuis Sederhana</h1>
-  <div id="kuis"></div>
+  <div id="kuis">Memuat soal...</div>
   <button onclick="cekJawaban()">Kumpulkan Jawaban</button>
-  <div id="hasil"></div>
+  <div id="hasil" style="margin-top:20px; font-weight:bold;"></div>
 
   <script>
     const sheetID = '1g1bWCjmdYD8DdbQ7GxzvEr1ZaxBOADhKFWNbDLMWKmA';
@@ -23,41 +25,47 @@
     fetch(url)
       .then(res => res.text())
       .then(data => {
-        const json = JSON.parse(data.substr(47).slice(0, -2));
+        const json = JSON.parse(data.substr(47).slice(0, -2)); // buang teks pembungkus JSON
         const rows = json.table.rows;
         let html = '';
 
         rows.forEach((row, index) => {
           const nomor = index + 1;
-          const soal = row.c[1]?.v;
+          const soal = row.c[1]?.v || '';
           const pilihan = ['A', 'B', 'C', 'D'].map((huruf, i) =>
-            `<label><input type="radio" name="soal${nomor}" value="${huruf}"> ${huruf}. ${row.c[2+i]?.v}</label><br>`).join('');
+            `<label><input type="radio" name="soal${nomor}" value="${huruf}"> ${huruf}. ${row.c[2 + i]?.v || ''}</label><br>`
+          ).join('');
+          const kunci = row.c[6]?.v || '';
 
-          kunciJawaban.push(row.c[6]?.v);
+          kunciJawaban.push(kunci.trim().toUpperCase());
 
           html += `
             <div class="soal">
-              <strong>Soal ${nomor}:</strong><br>${soal}<br>
+              <strong>Soal ${nomor}:</strong>
+              <p>${soal}</p>
               ${pilihan}
             </div>
           `;
         });
 
         document.getElementById('kuis').innerHTML = html;
+      })
+      .catch(err => {
+        document.getElementById('kuis').innerText = 'Gagal memuat soal. Periksa ID spreadsheet dan izin akses.';
+        console.error(err);
       });
 
     function cekJawaban() {
-      const jumlahSoal = kunciJawaban.length;
       let benar = 0;
 
-      for (let i = 1; i <= jumlahSoal; i++) {
-        const jawaban = document.querySelector(`input[name="soal${i}"]:checked`);
-        if (jawaban && jawaban.value === kunciJawaban[i-1]) {
+      for (let i = 0; i < kunciJawaban.length; i++) {
+        const pilihan = document.querySelector(`input[name="soal${i + 1}"]:checked`);
+        if (pilihan && pilihan.value === kunciJawaban[i]) {
           benar++;
         }
       }
 
-      document.getElementById('hasil').innerHTML = `Skor kamu: ${benar} dari ${jumlahSoal}`;
+      document.getElementById('hasil').innerText = `Skor kamu: ${benar} dari ${kunciJawaban.length}`;
     }
   </script>
 </body>
