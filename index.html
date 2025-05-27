@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kuis Sederhana</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    .soal { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Kuis Sederhana</h1>
+  <div id="kuis"></div>
+  <button onclick="cekJawaban()">Kumpulkan Jawaban</button>
+  <div id="hasil"></div>
+
+  <script>
+    const sheetID = '1g1bWCjmdYD8DdbQ7GxzvEr1ZaxBOADhKFWNbDLMWKmA';
+    const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json`;
+
+    let kunciJawaban = [];
+
+    fetch(url)
+      .then(res => res.text())
+      .then(data => {
+        const json = JSON.parse(data.substr(47).slice(0, -2));
+        const rows = json.table.rows;
+        let html = '';
+
+        rows.forEach((row, index) => {
+          const nomor = index + 1;
+          const soal = row.c[1]?.v;
+          const pilihan = ['A', 'B', 'C', 'D'].map((huruf, i) =>
+            `<label><input type="radio" name="soal${nomor}" value="${huruf}"> ${huruf}. ${row.c[2+i]?.v}</label><br>`).join('');
+
+          kunciJawaban.push(row.c[6]?.v);
+
+          html += `
+            <div class="soal">
+              <strong>Soal ${nomor}:</strong><br>${soal}<br>
+              ${pilihan}
+            </div>
+          `;
+        });
+
+        document.getElementById('kuis').innerHTML = html;
+      });
+
+    function cekJawaban() {
+      const jumlahSoal = kunciJawaban.length;
+      let benar = 0;
+
+      for (let i = 1; i <= jumlahSoal; i++) {
+        const jawaban = document.querySelector(`input[name="soal${i}"]:checked`);
+        if (jawaban && jawaban.value === kunciJawaban[i-1]) {
+          benar++;
+        }
+      }
+
+      document.getElementById('hasil').innerHTML = `Skor kamu: ${benar} dari ${jumlahSoal}`;
+    }
+  </script>
+</body>
+</html>
